@@ -49,6 +49,7 @@ internal class Program
                 case "0":
                     Console.WriteLine("\nGoodbye\n");
                     closeApp = true;
+                    Environment.Exit(0);
                     break;
                 case "1":
                     GetAllRecords();
@@ -59,17 +60,51 @@ internal class Program
                 case "3":
                     Delete();
                     break;
-                //case "4":
-                //    Update();
-                //    break;
-                //default:
-                //Console.WriteLine("\nInvalid Command. Please type a number from 0 to 4\n");
-                //break;
+                case "4":
+                    Update();
+                    break;
+                default:
+                Console.WriteLine("\nInvalid Command. Please type a number from 0 to 4\n");
+                break;
 
             }
         }
 
     }
+
+    internal static void Update()
+    {
+        Console.Clear();
+        GetAllRecords();
+
+        var recordId = GetNumberInput("Please type the id of the record you would like to update. Type 0 to return to main menu \n\n");
+        using (var connection = new SqliteConnection(connectionString))
+        {
+            connection.Open();
+
+            var checkCmd = connection.CreateCommand();
+            checkCmd.CommandText = $"SELECT EXISTS(SELECT 1 FROM drinking_water WHERE Id = {recordId})";
+
+        int checkQuery = Convert.ToInt32(checkCmd.ExecuteScalar());
+
+            if (checkQuery == 0)
+            {
+                Console.WriteLine($"\n\nRecord with Id {recordId} doesnt exist.\n\n");
+                connection.Close();
+                Update();
+            }
+
+            string date = GetDateInput();
+
+            int quantity = GetNumberInput("\n\n Please insert the number of glasses or measure of your choice (No Decimals) \n\n");
+
+            var tableCmd = connection.CreateCommand();
+            tableCmd.CommandText = $"Update drinking_water Set date = '{date}', quantity = '{quantity}' WHERE ID = {recordId}";
+
+        }
+
+    }
+
     private static void GetAllRecords()
     {
         Console.Clear();
@@ -138,6 +173,11 @@ internal class Program
 
         if (dateInput == "0") GetUserInput();
 
+        while (!DateTime.TryParseExact(dateInput, "dd-mm-yy", new CultureInfo("en-US"), DateTimeStyles.None, out _))
+        {
+            Console.WriteLine("\n\nInvalid Date (format dd-mm-yy) type 0 to return to main menu)");
+            dateInput = Console.ReadLine();
+        }
         return dateInput;
     }
     internal static int GetNumberInput(string message)
@@ -147,6 +187,12 @@ internal class Program
 
         if (numberInput == "0") GetUserInput();
 
+        while (!Int32.TryParse(numberInput, out _) || Convert.ToInt32(numberInput) < 0)
+        {
+            Console.WriteLine("\n\nInvalid number try again\n\n");
+            numberInput = Console.ReadLine();
+        }
+
         int finalInput = Convert.ToInt32(numberInput);
 
         return finalInput;
@@ -155,7 +201,7 @@ internal class Program
     private static void Delete()
 {
     Console.Clear();
-    GetAllRecords();
+    //GetAllRecords();
 
     var recordId = GetNumberInput("\n\nPlease tyoe the Id of the record that you want to delete or type 0 to return to main menu");
 
